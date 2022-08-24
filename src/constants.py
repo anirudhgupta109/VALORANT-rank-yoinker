@@ -3,8 +3,8 @@ from colr import color
 
 version = "2.21"
 enablePrivateLogging = True
-hide_names = True
-hide_levels = True
+hide_names = False
+hide_levels = False
 
 
 before_ascendant_seasons = [
@@ -152,6 +152,6 @@ DEFAULT_CONFIG = {
             "last_played": True,
             "auto_hide_leaderboard": True,
             "pre_cls": False,
-            "game_chat": False
+            "game_chat": True
         }
     }

@@ -7,14 +7,17 @@ TABLE_OPTS = {
     "leaderboard": "Leaderboard Position",
     "peakrank": "Peak Rank",
     "headshot_percent": "Headshot Percentage",
-    "winrate": "WinRate"
+    "winrate": "WinRate",
+    "kd": "K/D Ratio <!> Last Game Only <!>"
 }
 
 FLAGS_OPTS = {
 	"last_played": "Last Played Stats",
 	"auto_hide_leaderboard": "Auto Hide Leaderboard Column",
     "pre_cls": "Pre-Clear Screen",
-    "game_chat": "Print Game Chat"
+    "game_chat": "Print Game Chat",
+    "peak_rank_act": "Peak Rank Act",
+    "discord_rpc": "Discord Rich Presence"
 }
 
 weapon_question = lambda config: {

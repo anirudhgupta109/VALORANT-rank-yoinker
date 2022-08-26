@@ -3,10 +3,12 @@ import websockets.client
 import ssl
 import base64
 import json
+from colr import color
+import re
 
 
 class Ws:
-    def __init__(self, lockfile, Requests, cfg):
+    def __init__(self, lockfile, Requests, cfg, colors, hide_names, chatlog, rpc=None):
 
         self.lockfile = lockfile
         self.Requests = Requests
@@ -16,6 +18,19 @@ class Ws:
         self.ssl_context.verify_mode = ssl.CERT_NONE
         self.id_seen = []
         self.cfg = cfg
+        self.player_data = {}
+        self.messages = 0
+        self.colors = colors
+        self.hide_names = hide_names
+        self.message_history = []
+        self.up = "\033[A"
+        self.chat_limit = 5
+        self.chatlog = chatlog
+        if self.cfg.get_feature_flag("discord_rpc"):
+            self.rpc = rpc
+
+    def set_player_data(self, player_data):
+        self.player_data = player_data
 
     # async def conntect_to_websocket(self, initial_game_state):
 
@@ -42,7 +57,8 @@ class Ws:
         self.websocket_client = websockets.connect(url, ssl=self.ssl_context, extra_headers=local_headers)
         async with self.websocket_client as websocket:
             await websocket.send('[5, "OnJsonApiEvent_chat_v4_presences"]')
-            await websocket.send('[5, "OnJsonApiEvent_chat_v6_messages"]')
+            if self.cfg.get_feature_flag("game_chat"):
+                await websocket.send('[5, "OnJsonApiEvent_chat_v6_messages"]')
             while True:
                 response = await websocket.recv()
                 h = self.handle(response, initial_game_state)
@@ -62,14 +78,47 @@ class Ws:
                         state = json.loads(base64.b64decode(presence['private']))["sessionLoopState"]
                     
                     if state is not None:
+                        if self.cfg.get_feature_flag("discord_rpc"):
+                            self.rpc.set_rpc(json.loads(base64.b64decode(presence['private'])))
                         if state != initial_game_state:
+                            self.messages = 0
+                            self.message_history = []
                             return state
             if resp_json[2].get("uri") == "/chat/v6/messages":
                 message = resp_json[2]["data"]["messages"][0]
-                if message["id"] not in self.id_seen:
-                    if self.cfg.get_feature_flag("game_chat"):
-                        print(f"{message['game_name']}#{message['game_tag']}: {message['body']}")
-                    self.id_seen.append(message['id'])
+                #currently only game chat no pregame or menu
+                if "ares-coregame" in message["cid"]:
+                    if message["id"] not in self.id_seen:
+                        if self.player_data[message["puuid"]]["team"] == "Red":
+                            clr = (238, 77, 77)
+                        else:
+                            clr = (76, 151, 237)
+                        agent = self.colors.get_agent_from_uuid(self.player_data[message['puuid']]['agent'].lower())
+                        name = f"{message['game_name']}#{message['game_tag']}"
+                        if self.player_data[message['puuid']]['streamer_mode'] and self.hide_names and message['puuid'] not in self.player_data["ignore"]:
+                            self.print_message(f"{color(agent, clr)}: {message['body']}")
+                        else:
+                            if agent == "":
+                                agent_str = ""
+                            else:
+                                agent_str = f" ({agent})"
+                            self.print_message(f"{color(name, clr)}{agent_str}: {message['body']}")
+                        self.id_seen.append(message['id'])
+
+    def print_message(self, message):
+        self.chatlog(message)
+        self.messages += 1
+        if self.messages > self.chat_limit:
+            print(self.up * self.chat_limit, end="")
+            for i in range(len(self.message_history) - self.chat_limit + 1, len(self.message_history)):
+                print(self.message_history[i] + " " * max([0, len(self.colors.escape_ansi(self.message_history[i-1])) - len(self.colors.escape_ansi(self.message_history[i]))]))
+            print(message + " " * max([0, len(self.colors.escape_ansi(self.message_history[-1])) - len(self.colors.escape_ansi(message))]))
+        else:
+            print(message)
+
+        self.message_history.append(message)
+
+    
 
 # if __name__ == "__main__":
 #     try:

@@ -20,6 +20,15 @@ class Menu:
                             party_json[decodedPresence["partyId"]].append(presence["puuid"])
                         except KeyError:
                             party_json.update({decodedPresence["partyId"]: [presence["puuid"]]})
+
+        #remove non-in-game parties from with one player in game
+        parties_to_delete = []
+        for party in party_json:
+            if len(party_json[party]) == 1:
+                parties_to_delete.append(party)
+        for party in parties_to_delete:
+            del party_json[party]
+
         self.log(f"retrieved party json: {party_json}")
         return party_json
 

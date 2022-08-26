@@ -152,6 +152,6 @@ DEFAULT_CONFIG = {
             "last_played": True,
             "auto_hide_leaderboard": True,
             "pre_cls": False,
-            "game_chat": True
+            "game_chat": False
         }
     }

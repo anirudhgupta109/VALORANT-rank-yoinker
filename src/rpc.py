@@ -1,6 +1,7 @@
 from pypresence import Presence
 from pypresence.exceptions import DiscordNotFound, InvalidID
 import nest_asyncio
+import time
 
 class Rpc():
     def __init__(self, map_dict, gamemodes, colors):
@@ -30,7 +31,7 @@ class Rpc():
             try:
                 if presence["isValid"]:
                     if presence["sessionLoopState"] == "INGAME":
-                        if self.data.get("agent") is None:
+                        if self.data.get("agent") is None or self.data.get("agent") is "":
                             agent_img = None
                             agent = None
                         else:
@@ -41,13 +42,28 @@ class Rpc():
                             gamemode = "Custom Game"
                         else:
                             gamemode = self.gamemodes.get(presence['queueId'])
+                        
+                        details = f"{gamemode} // {presence['partyOwnerMatchScoreAllyTeam']} - {presence['partyOwnerMatchScoreEnemyTeam']}"
+
+                        mapText = self.map_dict.get(presence["matchMap"].lower())
+                        if mapText == "The Range":
+                            mapImage = "splash_range_square"
+                            details = "in Range"
+                            agent_img = str(self.data.get("rank"))
+                            agent = self.data.get("rank_name")
+                        else:
+                            mapImage = f"splash_{self.map_dict.get(presence['matchMap'].lower())}_square".lower()
+                        if mapText is None or mapText is "":
+                            mapText = None
+                            mapImage = None
                         self.rpc.update(
                             state=f"In a Party ({presence['partySize']} of {presence['maxPartySize']})",
-                            details=f"{gamemode} // {presence['partyOwnerMatchScoreAllyTeam']} - {presence['partyOwnerMatchScoreEnemyTeam']}",
-                            large_image=f"splash_{self.map_dict.get(presence['matchMap'].lower())}_square",
-                            large_text=self.map_dict.get(presence["matchMap"].lower()),
+                            details=details,
+                            large_image=mapImage,
+                            large_text=mapText,
                             small_image=agent_img,
-                            small_text=agent
+                            small_text=agent,
+                            start=time.time()
                         )
                     elif presence["sessionLoopState"] == "MENUS":
                         if presence["isIdle"]:
@@ -76,12 +92,18 @@ class Rpc():
                         else:
                             gamemode = self.gamemodes.get(presence['queueId'])
 
-                        
+                        mapText = self.map_dict.get(presence["matchMap"].lower())
+                        mapImage = f"splash_{self.map_dict.get(presence['matchMap'].lower())}_square".lower()
+                        if mapText is None or mapText is "":
+                            mapText = None
+                            mapImage = None
+
+
                         self.rpc.update(
                             state=f"In a Party ({presence['partySize']} of {presence['maxPartySize']})",
                             details=f"Agent Select - {gamemode}",
-                            large_image=f"splash_{self.map_dict.get(presence['matchMap'].lower())}_square",
-                            large_text=self.map_dict.get(presence["matchMap"].lower()),
+                            large_image=mapImage,
+                            large_text=mapText,
                             small_image=str(self.data.get("rank")),
                             small_text=self.data.get("rank_name")
                         )

@@ -200,6 +200,8 @@ try:
 
             if game_state == "INGAME":
                 coregame_stats = coregame.get_coregame_stats()
+                if coregame_stats == None:
+                    continue
                 Players = coregame_stats["Players"]
                 #data for chat to function
                 presence = presences.get_presence()
@@ -292,6 +294,9 @@ try:
                                     # PARTY_ICON
                                     party_icon = partyIcons[party]
                         playerRank = rank.get_rank(player["Subject"], seasonID)
+                        if player["Subject"] == Requests.puuid:
+                            if cfg.get_feature_flag("discord_rpc"):
+                                rpc.set_data({"rank": playerRank["rank"], "rank_name": colors.escape_ansi(NUMBERTORANKS[playerRank["rank"]]) + " | " + str(playerRank["rr"]) + "rr"})
                         # rankStatus = playerRank[1]
                         #useless code since rate limit is handled in the requestsV
                         # while not rankStatus:
@@ -348,7 +353,7 @@ try:
                         rr = playerRank["rr"]
 
                         #short peak rank string
-                        peakRankAct = f" e({playerRank['peakrankep']}a{playerRank['peakrankact']})"
+                        peakRankAct = f" (e{playerRank['peakrankep']}a{playerRank['peakrankact']})"
                         if not cfg.get_feature_flag("peak_rank_act"):
                             peakRankAct = ""
 
@@ -398,6 +403,8 @@ try:
             elif game_state == "PREGAME":
                 already_played_with = []
                 pregame_stats = pregame.get_pregame_stats()
+                if pregame_stats == None:
+                    continue
                 try:
                     server = GAMEPODS[pregame_stats["GamePodID"]]
                 except KeyError:
@@ -495,7 +502,7 @@ try:
                         rr = playerRank["rr"]
 
                         #short peak rank string
-                        peakRankAct = f" e({playerRank['peakrankep']}a{playerRank['peakrankact']})"
+                        peakRankAct = f" (e{playerRank['peakrankep']}a{playerRank['peakrankact']})"
                         if not cfg.get_feature_flag("peak_rank_act"):
                             peakRankAct = ""
                         # PEAK RANK
@@ -575,7 +582,7 @@ try:
                             rr = playerRank["rr"]
 
                             #short peak rank string
-                            peakRankAct = f" e({playerRank['peakrankep']}a{playerRank['peakrankact']})"
+                            peakRankAct = f" (e{playerRank['peakrankep']}a{playerRank['peakrankact']})"
                             if not cfg.get_feature_flag("peak_rank_act"):
                                 peakRankAct = ""
 

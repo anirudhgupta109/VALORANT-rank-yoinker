@@ -157,10 +157,10 @@ DEFAULT_CONFIG = {
             "skin": True,
             "rr": True,
             "peakrank": True,
-            "leaderboard": True,
+            "leaderboard": False,
             "headshot_percent": True,
             "winrate": True,
-            "kd": False
+            "kd": True
         },
         "flags": {
             "last_played": True,
@@ -168,6 +168,6 @@ DEFAULT_CONFIG = {
             "pre_cls": False,
             "game_chat": False,
             "peak_rank_act": True,
-            "discord_rpc": True
+            "discord_rpc": False
         }
     }

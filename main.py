@@ -4,7 +4,6 @@ import urllib3
 import os
 import sys
 import time
-from alive_progress import alive_bar
 import asyncio
 from InquirerPy import inquirer
 
@@ -36,9 +35,13 @@ from src.chatlogs import ChatLogging
 
 from src.rpc import Rpc
 
+from colr import color as colr
+
+from rich.console import Console as RichConsole
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-os.system('cls')
+# os.system('cls')
 os.system(f"title VALORANT rank yoinker v{version}")
 
 server = ""
@@ -64,9 +67,13 @@ try:
                 message="Do you want to run vRY now?", default=True
             ).execute()
             if run_app:
+                os.system('mode 150,35')
                 os.system('cls')
             else:
                 os._exit(0)
+        else:
+            os.system('mode 150,35')
+            os.system('cls')
     except Exception as e:
         print("Something went wrong while running configurator!")
         log(f"configurator encountered an error")
@@ -107,12 +114,12 @@ try:
     colors = Colors(hide_names, agent_dict, AGENTCOLORLIST)
 
     loadoutsClass = Loadouts(Requests, log, colors, Server)
-    table = Table(cfg, chatlog)
+    table = Table(cfg, chatlog, log)
 
     stats = Stats()
 
     if cfg.get_feature_flag("discord_rpc"):
-        rpc = Rpc(map_dict, gamemodes, colors)
+        rpc = Rpc(map_dict, gamemodes, colors, log)
     else:
         rpc = None
 
@@ -134,6 +141,8 @@ try:
     print(color("\nVisit https://vry.netlify.app/matchLoadouts to view full player inventories\n", fore=(255, 253, 205)))
     chatlog(color("\nVisit https://vry.netlify.app/matchLoadouts to view full player inventories\n", fore=(255, 253, 205)))
 
+
+    richConsole = RichConsole()
 
     # loop = asyncio.new_event_loop()
     # asyncio.set_event_loop(loop)
@@ -224,7 +233,10 @@ try:
                 presences.wait_for_presence(namesClass.get_players_puuid(Players))
                 names = namesClass.get_names_from_puuids(Players)
                 loadouts = loadoutsClass.get_match_loadouts(coregame.get_coregame_match_id(), Players, cfg.weapon, valoApiSkins, names, state="game")
-                with alive_bar(total=len(Players), title='Fetching Players', bar='classic2') as bar:
+                # with alive_bar(total=len(Players), title='Fetching Players', bar='classic2') as bar:
+                isRange = False
+                playersLoaded = 1
+                with richConsole.status("Loading Players...") as status: 
                     partyOBJ = menu.get_party_json(namesClass.get_players_puuid(Players), presence)
                     # log(f"retrieved names dict: {names}")
                     Players.sort(key=lambda Players: Players["PlayerIdentity"].get("AccountLevel"), reverse=True)
@@ -242,6 +254,8 @@ try:
                         if p["Subject"] == Requests.puuid:
                             allyTeam = p["TeamID"]
                     for player in Players:
+                        status.update(f"Loading players... [{playersLoaded}/{len(Players)}]")
+                        playersLoaded += 1
 
                         if player["Subject"] in stats_data.keys():
                             if player["Subject"] != Requests.puuid and player["Subject"] not in partyMembersList:
@@ -336,6 +350,8 @@ try:
                         # AGENT
                         # agent = str(agent_dict.get(player["CharacterID"].lower()))
                         agent = colors.get_agent_from_uuid(player["CharacterID"].lower())
+                        if agent == "" and len(Players) == 1:
+                            isRange = True
 
                         # NAME
                         name = Namecolor
@@ -399,7 +415,7 @@ try:
                                 }
                             }
                         )
-                        bar()
+                        # bar()
             elif game_state == "PREGAME":
                 already_played_with = []
                 pregame_stats = pregame.get_pregame_stats()
@@ -415,7 +431,9 @@ try:
                 #temporary until other regions gets fixed?
                 # loadouts = loadoutsClass.get_match_loadouts(pregame.get_pregame_match_id(), pregame_stats, cfg.weapon, valoApiSkins, names,
                                             #   state="pregame")
-                with alive_bar(total=len(Players), title='Fetching Players', bar='classic2') as bar:
+                playersLoaded = 1
+                with richConsole.status("Loading Players...") as status: 
+                # with alive_bar(total=len(Players), title='Fetching Players', bar='classic2') as bar:
                     presence = presences.get_presence()
                     partyOBJ = menu.get_party_json(namesClass.get_players_puuid(Players), presence)
                     partyMembers = menu.get_party_members(Requests.puuid, presence)
@@ -425,6 +443,8 @@ try:
                     partyCount = 0
                     partyIcons = {}
                     for player in Players:
+                        status.update(f"Loading players... [{playersLoaded}/{len(Players)}]")
+                        playersLoaded += 1
                         party_icon = ''
 
                         # set party premade icon
@@ -534,18 +554,22 @@ try:
                                               kd,
                                               level,
                                               ])
-                        bar()
+                        # bar()
             if game_state == "MENUS":
                 already_played_with = []
                 Players = menu.get_party_members(Requests.puuid, presence)
                 names = namesClass.get_names_from_puuids(Players)
-                with alive_bar(total=len(Players), title='Fetching Players', bar='classic2') as bar:
+                playersLoaded = 1
+                with richConsole.status("Loading Players...") as status: 
+                # with alive_bar(total=len(Players), title='Fetching Players', bar='classic2') as bar:
                     # log(f"retrieved names dict: {names}")
                     Players.sort(key=lambda Players: Players["PlayerIdentity"].get("AccountLevel"), reverse=True)
                     seen = []
                     for player in Players:
 
                         if player not in seen:
+                            status.update(f"Loading players... [{playersLoaded}/{len(Players)}]")
+                            playersLoaded += 1
                             party_icon = PARTYICONLIST[0]
                             playerRank = rank.get_rank(player["Subject"], seasonID)
 
@@ -614,14 +638,12 @@ try:
                                                 kd,
                                                 level
                                                 ])
-                            # table.add_rows([])
-                            bar()
                     seen.append(player["Subject"])
             if (title := game_state_dict.get(game_state)) is None:
                 # program_exit(1)
                 time.sleep(9)
             if server != "":
-                table.set_title(f"VALORANT status: {title} - {server}")
+                table.set_title(f"VALORANT status: {title} {colr('- ' + server, fore=(200, 200, 200))}")
             else:
                 table.set_title(f"VALORANT status: {title}")
             server = ""
@@ -630,14 +652,21 @@ try:
                     table.set_runtime_col_flag('Pos.', False)
 
                 if game_state == "MENUS":
+                    table.set_runtime_col_flag('Party', False)
                     table.set_runtime_col_flag('Agent',False)
                     table.set_runtime_col_flag('Skin',False)
 
+                if game_state == "INGAME":
+                    if isRange:
+                        table.set_runtime_col_flag('Party', False)
+                        table.set_runtime_col_flag('Agent',False)
+
+                table.set_caption(f"VALORANT rank yoinker v{version}")
                 table.display()
                 firstPrint = False
 
-                print(f"VALORANT rank yoinker v{version}")
-                chatlog(f"VALORANT rank yoinker v{version}")
+                # print(f"VALORANT rank yoinker v{version}")
+                # chatlog(f"VALORANT rank yoinker v{version}")
                                         #                 {
                                         #     "times": sum(stats_data[player["Subject"]]),
                                         #     "name": curr_player_stat["name"],

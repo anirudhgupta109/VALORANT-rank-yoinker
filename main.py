@@ -146,6 +146,7 @@ try:
     valoApiSkins = requests.get("https://valorant-api.com/v1/weapons/skins")
     gameContent = content.get_content()
     seasonID = content.get_latest_season_id(gameContent)
+    previousSeasonID = content.get_previous_season_id(gameContent)
     lastGameState = ""
 
     print(color("\nVisit https://vry.netlify.app/matchLoadouts to view full player inventories\n", fore=(255, 253, 205)))
@@ -193,7 +194,11 @@ try:
             else:
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
+                previous_game_state = game_state
                 game_state = loop.run_until_complete(Wss.recconect_to_websocket(game_state))
+                # We invalidate the cached responses when going from any state to menus
+                if previous_game_state != game_state and game_state == "MENUS":
+                    rank.invalidate_cached_responses()
                 log(f"new game state: {game_state}")
                 loop.close()
             firstTime = False
@@ -318,6 +323,8 @@ try:
                                     # PARTY_ICON
                                     party_icon = partyIcons[party]
                         playerRank = rank.get_rank(player["Subject"], seasonID)
+                        previousPlayerRank = rank.get_rank(player["Subject"], previousSeasonID)
+
                         if player["Subject"] == Requests.puuid:
                             if cfg.get_feature_flag("discord_rpc"):
                                 rpc.set_data({"rank": playerRank["rank"], "rank_name": colors.escape_ansi(NUMBERTORANKS[playerRank["rank"]]) + " | " + str(playerRank["rr"]) + "rr"})
@@ -374,6 +381,8 @@ try:
 
                         # RANK
                         rankName = NUMBERTORANKS[playerRank["rank"]]
+                        if cfg.get_feature_flag("aggregate_rank_rr") and cfg.table.get("rr"):
+                            rankName += f" ({playerRank['rr']})"
 
                         # RANK RATING
                         rr = playerRank["rr"]
@@ -386,6 +395,9 @@ try:
 
                         # PEAK RANK
                         peakRank = NUMBERTORANKS[playerRank["peakrank"]] + peakRankAct
+
+                        # PREVIOUS RANK
+                        previousRank = NUMBERTORANKS[previousPlayerRank["rank"]]
 
                         # LEADERBOARD
                         leaderboard = playerRank["leaderboard"]
@@ -406,6 +418,7 @@ try:
                                               rankName,
                                               rr,
                                               peakRank,
+                                              previousRank,
                                               leaderboard,
                                               hs,
                                               wr,
@@ -469,6 +482,7 @@ try:
                                     party_icon = partyIcons[party]
                                 partyCount += 1
                         playerRank = rank.get_rank(player["Subject"], seasonID)
+                        previousPlayerRank = rank.get_rank(player["Subject"], previousSeasonID)
 
                         if player["Subject"] == Requests.puuid:
                             if cfg.get_feature_flag("discord_rpc"):
@@ -527,6 +541,8 @@ try:
 
                         # RANK
                         rankName = NUMBERTORANKS[playerRank["rank"]]
+                        if cfg.get_feature_flag("aggregate_rank_rr") and cfg.table.get("rr"):
+                            rankName += f" ({playerRank['rr']})"
 
                         # RANK RATING
                         rr = playerRank["rr"]
@@ -537,6 +553,9 @@ try:
                             peakRankAct = ""
                         # PEAK RANK
                         peakRank = NUMBERTORANKS[playerRank["peakrank"]] + peakRankAct
+
+                        # PREVIOUS RANK
+                        previousRank = NUMBERTORANKS[previousPlayerRank["rank"]]
 
                         # LEADERBOARD
                         leaderboard = playerRank["leaderboard"]
@@ -558,6 +577,7 @@ try:
                                               rankName,
                                               rr,
                                               peakRank,
+                                              previousRank,
                                               leaderboard,
                                               hs,
                                               wr,
@@ -582,7 +602,7 @@ try:
                             playersLoaded += 1
                             party_icon = PARTYICONLIST[0]
                             playerRank = rank.get_rank(player["Subject"], seasonID)
-
+                            previousPlayerRank = rank.get_rank(player["Subject"], previousSeasonID)
                             if player["Subject"] == Requests.puuid:
                                 if cfg.get_feature_flag("discord_rpc"):
                                     rpc.set_data({"rank": playerRank["rank"], "rank_name": colors.escape_ansi(NUMBERTORANKS[playerRank["rank"]]) + " | " + str(playerRank["rr"]) + "rr"})
@@ -611,6 +631,8 @@ try:
 
                             # RANK
                             rankName = NUMBERTORANKS[playerRank["rank"]]
+                            if cfg.get_feature_flag("aggregate_rank_rr") and cfg.table.get("rr"):
+                                rankName += f" ({playerRank['rr']})"
 
                             # RANK RATING
                             rr = playerRank["rr"]
@@ -622,6 +644,9 @@ try:
 
                             # PEAK RANK
                             peakRank = NUMBERTORANKS[playerRank["peakrank"]] + peakRankAct
+
+                            # PREVIOUS RANK
+                            previousRank = NUMBERTORANKS[previousPlayerRank["rank"]]
 
                             # LEADERBOARD
                             leaderboard = playerRank["leaderboard"]
@@ -642,6 +667,7 @@ try:
                                                 rankName,
                                                 rr,
                                                 peakRank,
+                                                previousRank,
                                                 leaderboard,
                                                 hs,
                                                 wr,
@@ -670,6 +696,9 @@ try:
                     if isRange:
                         table.set_runtime_col_flag('Party', False)
                         table.set_runtime_col_flag('Agent',False)
+
+                # We don't to show the RR column if the "aggregate_rank_rr" feature flag is True.
+                table.set_runtime_col_flag('RR', cfg.table.get("rr") and not cfg.get_feature_flag("aggregate_rank_rr"))
 
                 table.set_caption(f"VALORANT rank yoinker v{version}")
                 table.display()

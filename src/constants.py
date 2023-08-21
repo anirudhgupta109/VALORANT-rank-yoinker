@@ -16,6 +16,7 @@ gamemodes = {
     "deathmatch": "Deathmatch",
     "ggteam": "Escalation",
     "onefa": "Replication",
+    "hurm": "Team Deathmatch",
     "custom": "Custom",
     "snowball": "Snowball Fight",
     "": "Custom",
@@ -164,7 +165,8 @@ DEFAULT_CONFIG = {
             "leaderboard": False,
             "headshot_percent": True,
             "winrate": True,
-            "kd": True
+            "kd": True,
+            "level": True
         },
         "flags": {
             "last_played": True,

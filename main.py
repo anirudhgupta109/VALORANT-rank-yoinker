@@ -289,7 +289,7 @@ try:
                                         if m["match_id"] != coregame.match_id and m["match_id"] not in m_set:
                                             times += 1
                                             m_set += (m["match_id"],)
-                                    if player["PlayerIdentity"]["Incognito"] == False:
+                                    if player["PlayerIdentity"]["Incognito"] == False or hide_names == False:
                                         already_played_with.append(
                                                 {
                                                     "times": times,

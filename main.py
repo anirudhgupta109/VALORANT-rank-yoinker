@@ -570,7 +570,7 @@ try:
                                 fallback_relation=current_relation,
                             )
                             if summary is not None:
-                                if player["PlayerIdentity"]["Incognito"]:
+                                if player["PlayerIdentity"]["Incognito"] and hide_names:
                                     team_string = "your" if player["TeamID"] == allyTeam else "enemy"
                                     summary["name"] = (
                                         agent_dict.get(player["CharacterID"].lower(), "Unknown")

@@ -1,49 +1,46 @@
-import traceback
-import requests
-import urllib3
+import asyncio
 import os
+import socket
 import sys
 import time
-import asyncio
+import traceback
+
+import requests
+import urllib3
+from colr import color as colr
 from InquirerPy import inquirer
-
-from src.constants import *
-from src.requestsV import Requests
-from src.logs import Logging
-from src.config import Config
-from src.colors import Colors
-from src.rank import Rank
-from src.content import Content
-from src.names import Names
-from src.presences import Presences
-from src.Loadouts import Loadouts
-from src.websocket import Ws
-
-from src.states.menu import Menu
-from src.states.pregame import Pregame
-from src.states.coregame import Coregame
-
-from src.table import Table
-from src.server import Server
-from src.errors import Error
-
-from src.stats import Stats
-from src.configurator import configure
-from src.player_stats import PlayerStats
+from rich.console import Console as RichConsole
 
 from src.chatlogs import ChatLogging
-
+from src.colors import Colors
+from src.config import Config
+from src.configurator import configure
+from src.constants import *
+from src.content import Content
+from src.errors import Error
+from src.Loadouts import Loadouts
+from src.logs import Logging
+from src.names import Names
+from src.player_stats import PlayerStats
+from src.presences import Presences
+from src.rank import Rank
+from src.requestsV import Requests
 from src.rpc import Rpc
-
+from src.server import Server
+from src.states.coregame import Coregame
+from src.states.menu import Menu
+from src.states.pregame import Pregame
+from src.stats import Stats
+from src.table import Table
+from src.websocket import Ws
 from src.os import get_os
 
-from colr import color as colr
-
-from rich.console import Console as RichConsole
+from src.account_manager.account_manager import AccountManager
+from src.account_manager.account_config import AccountConfig
+from src.account_manager.account_auth import AccountAuth
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# os.system('cls')
 os.system(f"title VALORANT rank yoinker v{version}")
 
 server = ""
@@ -53,7 +50,18 @@ def program_exit(status: int):  # so we don't need to import the entire sys modu
     log(f"exited program with error code {status}")
     raise sys.exit(status)
 
-
+def get_ip():
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(0)
+        try:
+            # doesn't even have to be reachable
+            s.connect(('10.254.254.254', 1))
+            IP = s.getsockname()[0]
+        except Exception:
+            IP = '127.0.0.1'
+        finally:
+            s.close()
+        return IP
 
 try:
     Logging = Logging()
@@ -66,10 +74,6 @@ try:
         program_exit(0)
     else:
         log(f"Operating system: {get_os()[0]}\n")
-
-    ChatLogging = ChatLogging()
-    chatlog = ChatLogging.chatLog
-
     try:
         if len(sys.argv) > 1 and sys.argv[1] == "--config":
             configure()
@@ -77,12 +81,10 @@ try:
                 message="Do you want to run vRY now?", default=True
             ).execute()
             if run_app:
-                os.system('mode 150,35')
                 os.system('cls')
             else:
                 os._exit(0)
         else:
-            os.system('mode 150,35')
             os.system('cls')
     except Exception as e:
         print("Something went wrong while running configurator!")
@@ -91,12 +93,16 @@ try:
         input("press enter to exit...\n")
         os._exit(1)
 
+    ChatLogging = ChatLogging()
+    chatlog = ChatLogging.chatLog
 
-    ErrorSRC = Error(log)
+    acc_manager = AccountManager(log, AccountConfig, AccountAuth, NUMBERTORANKS)
 
-    Requests = Requests(version, log, ErrorSRC)
-    Requests.check_version()
+    ErrorSRC = Error(log, acc_manager)
+
+    Requests.check_version(version, Requests.copy_run_update_script)
     Requests.check_status()
+    Requests = Requests(version, log, ErrorSRC)
 
     cfg = Config(log)
 
@@ -138,8 +144,7 @@ try:
     else:
         rpc = None
 
-    Wss = Ws(Requests.lockfile, Requests, cfg, colors, hide_names, chatlog,
-             rpc)
+    Wss = Ws(Requests.lockfile, Requests, cfg, colors, hide_names, chatlog, Server, rpc)
     # loop = asyncio.new_event_loop()
     # asyncio.set_event_loop(loop)
     # loop.run_forever()
@@ -152,6 +157,8 @@ try:
     seasonID = content.get_latest_season_id(gameContent)
     previousSeasonID = content.get_previous_season_id(gameContent)
     lastGameState = ""
+
+    print("\nvRY Mobile", color(f"- {get_ip()}:{cfg.port}", fore=(255, 127, 80)))
 
     print(color("\nVisit https://vry.netlify.app/matchLoadouts to view full player inventories\n", fore=(255, 253, 205)))
     chatlog(color("\nVisit https://vry.netlify.app/matchLoadouts to view full player inventories\n", fore=(255, 253, 205)))
@@ -223,6 +230,20 @@ try:
 
             is_leaderboard_needed = False
 
+            priv_presence = presences.get_private_presence(presence)
+            if priv_presence["provisioningFlow"] == "CustomGame" or priv_presence["partyState"] == "CUSTOM_GAME_SETUP":
+                gamemode = "Custom Game"
+            else:
+                gamemode = gamemodes.get(priv_presence['queueId'])
+
+            heartbeat_data = {
+                "time": int(time.time()),
+                "state": game_state,
+                "mode": gamemode,
+                "puuid": Requests.puuid,
+                "players": {}
+            }
+
             if game_state == "INGAME":
                 coregame_stats = coregame.get_coregame_stats()
                 if coregame_stats == None:
@@ -248,16 +269,21 @@ try:
                     server = "New server"
                 presences.wait_for_presence(namesClass.get_players_puuid(Players))
                 names = namesClass.get_names_from_puuids(Players)
-                loadouts = loadoutsClass.get_match_loadouts(coregame.get_coregame_match_id(), Players, cfg.weapon, valoApiSkins, names, state="game")
+                loadouts_arr = loadoutsClass.get_match_loadouts(coregame.get_coregame_match_id(), Players, cfg.weapon, valoApiSkins, names, state="game")
+                loadouts = loadouts_arr[0]
+                loadouts_data = loadouts_arr[1]
                 # with alive_bar(total=len(Players), title='Fetching Players', bar='classic2') as bar:
                 isRange = False
                 playersLoaded = 1
-                with richConsole.status("Loading Players...") as status:
+                
+                heartbeat_data["map"] = map_urls[coregame_stats["MapID"].lower()],
+                with richConsole.status("Loading Players...") as status: 
                     partyOBJ = menu.get_party_json(namesClass.get_players_puuid(Players), presence)
                     # log(f"retrieved names dict: {names}")
                     Players.sort(key=lambda Players: Players["PlayerIdentity"].get("AccountLevel"), reverse=True)
                     Players.sort(key=lambda Players: Players["TeamID"], reverse=True)
                     partyCount = 0
+                    partyNum = 0
                     partyIcons = {}
                     lastTeamBoolean = False
                     lastTeam = "Red"
@@ -311,7 +337,6 @@ try:
                                                 })
 
                         party_icon = ''
-
                         # set party premade icon
                         for party in partyOBJ:
                             if player["Subject"] in partyOBJ[party]:
@@ -319,6 +344,7 @@ try:
                                     partyIcons.update({party: PARTYICONLIST[partyCount]})
                                     # PARTY_ICON
                                     party_icon = PARTYICONLIST[partyCount]
+                                    partyNum = partyCount + 1
                                     partyCount += 1
                                 else:
                                     # PARTY_ICON
@@ -426,6 +452,28 @@ try:
                                               kd,
                                               level
                                               ])
+
+                        heartbeat_data["players"][player["Subject"]] = {
+                            "puuid": player["Subject"],
+                            "name": names[player["Subject"]],
+                            "partyNumber": partyNum if party_icon != "" else 0,
+                            "agent": agent_dict[player["CharacterID"].lower()],
+                            "rank": playerRank["rank"],
+                            "peakRank": playerRank["peakrank"],
+                            "peakRankAct": peakRankAct,
+                            "rr": rr,
+                            "kd": ppstats["kd"],
+                            "headshotPercentage": ppstats["hs"],
+                            "winPercentage": f"{playerRank['wr']} ({playerRank['numberofgames']})",
+                            "level": player_level,
+                            "agentImgLink": loadouts_data["Players"][player["Subject"]].get("Agent",None),
+                            "team": loadouts_data["Players"][player["Subject"]].get("Team",None),
+                            "sprays": loadouts_data["Players"][player["Subject"]].get("Sprays",None),
+                            "title": loadouts_data["Players"][player["Subject"]].get("Title",None),
+                            "playerCard": loadouts_data["Players"][player["Subject"]].get("PlayerCard",None),
+                            "weapons": loadouts_data["Players"][player["Subject"]].get("Weapons",None)
+                        }                     
+
                         stats.save_data(
                             {
                                 player["Subject"]: {
@@ -478,6 +526,7 @@ try:
                                     partyIcons.update({party: PARTYICONLIST[partyCount]})
                                     # PARTY_ICON
                                     party_icon = PARTYICONLIST[partyCount]
+                                    partyNum = partyCount + 1
                                 else:
                                     # PARTY_ICON
                                     party_icon = partyIcons[party]
@@ -585,6 +634,21 @@ try:
                                               kd,
                                               level,
                                               ])
+
+                        heartbeat_data["players"][player["Subject"]] = {
+                            "name": names[player["Subject"]],
+                            "partyNumber": partyNum if party_icon != "" else 0,
+                            "agent": agent_dict[player["CharacterID"].lower()],
+                            "rank": playerRank["rank"],
+                            "peakRank": playerRank["peakrank"],
+                            "peakRankAct": peakRankAct,
+                            "level": player_level,
+                            "rr": rr,
+                            "kd": ppstats["kd"],
+                            "headshotPercentage": ppstats["hs"],
+                            "winPercentage": f"{playerRank['wr']} ({playerRank['numberofgames']})",
+                        }
+
                         # bar()
             if game_state == "MENUS":
                 already_played_with = []
@@ -675,6 +739,20 @@ try:
                                                 kd,
                                                 level
                                                 ])
+                            
+                            heartbeat_data["players"][player["Subject"]] = {
+                                "name": names[player["Subject"]],
+                                "rank": playerRank["rank"],
+                                "peakRank": playerRank["peakrank"],
+                                "peakRankAct": peakRankAct,
+                                "level": player_level,
+                                "rr": rr,
+                                "kd": ppstats["kd"],
+                                "headshotPercentage": ppstats["hs"],
+                                "winPercentage": f"{playerRank['wr']} ({playerRank['numberofgames']})",
+                            }
+
+                            # bar()
                     seen.append(player["Subject"])
             if (title := game_state_dict.get(game_state)) is None:
                 # program_exit(1)
@@ -702,6 +780,7 @@ try:
                 table.set_runtime_col_flag('RR', cfg.table.get("rr") and not cfg.get_feature_flag("aggregate_rank_rr"))
 
                 table.set_caption(f"VALORANT rank yoinker v{version}")
+                Server.send_payload("heartbeat",heartbeat_data)
                 table.display()
                 firstPrint = False
 

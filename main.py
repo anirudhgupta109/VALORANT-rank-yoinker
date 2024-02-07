@@ -548,10 +548,13 @@ try:
                     for p in Players:
                         if p["Subject"] == Requests.puuid:
                             allyTeam = p["TeamID"]
+                            break
                     if coregame_match_id and allyTeam:
                         active_match_context["match_id"] = coregame_match_id
                         active_match_context["my_team"] = allyTeam
                     for player in Players:
+                        # used to change player name color
+                        already_seen = False
                         status.update(
                             f"Loading players... [{playersLoaded}/{len(Players)}]"
                         )
@@ -570,6 +573,7 @@ try:
                                 fallback_relation=current_relation,
                             )
                             if summary is not None:
+                                already_seen = True
                                 if player["PlayerIdentity"]["Incognito"] and hide_names:
                                     team_string = "your" if player["TeamID"] == allyTeam else "enemy"
                                     summary["name"] = (
@@ -633,6 +637,7 @@ try:
                                 Requests.puuid,
                                 agent=player["CharacterID"],
                                 party_members=partyMembersList,
+                                played_before=already_seen,
                             )
                         else:
                             Namecolor = colors.get_color_from_team(
@@ -641,6 +646,7 @@ try:
                                 player["Subject"],
                                 Requests.puuid,
                                 party_members=partyMembersList,
+                                played_before=already_seen,
                             )
                         if lastTeam != player["TeamID"]:
                             if lastTeamBoolean:

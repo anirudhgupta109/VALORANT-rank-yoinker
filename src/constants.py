@@ -180,6 +180,7 @@ DEFAULT_CONFIG = {
             "game_chat": False,
             "peak_rank_act": True,
             "discord_rpc": False,
-            "aggregate_rank_rr": True
+            "aggregate_rank_rr": True,
+            "server_id": False
         }
     }

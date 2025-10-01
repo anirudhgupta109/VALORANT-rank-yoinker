@@ -43,6 +43,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 os.system(f"title VALORANT rank yoinker v{version}")
 
 server = ""
+team_side = None
 
 
 def program_exit(status: int):  # so we don't need to import the entire sys module
@@ -184,17 +185,15 @@ try:
             if firstTime:
                 run = True
                 while run:
-                    while True:
-                        presence = presences.get_presence()
-                        # wait until your own valorant presence is initialized
-                        if presences.get_private_presence(presence) != None:
-                            break
-                        time.sleep(5)
-                    if cfg.get_feature_flag("discord_rpc"):
-                        rpc.set_rpc(presences.get_private_presence(presence))
-                    game_state = presences.get_game_state(presence)
-                    if game_state != None:
-                        run = False
+                    presence = presences.get_presence()
+                    private_presence = presences.get_private_presence(presence)
+                    # wait until your own valorant presence is initialized
+                    if private_presence is not None:
+                        if cfg.get_feature_flag("discord_rpc"):
+                            rpc.set_rpc(private_presence)
+                        game_state = presences.get_game_state(presence)
+                        if game_state is not None:
+                            run = False
                     time.sleep(2)
                 log(f"first game state: {game_state}")
             else:
@@ -229,11 +228,14 @@ try:
                 os.system("cls")
 
             is_leaderboard_needed = False
-
+            
+            # get new presence
+            presence = presences.get_presence()
             priv_presence = presences.get_private_presence(presence)
+            
             if (
                 priv_presence["provisioningFlow"] == "CustomGame"
-                or priv_presence["partyState"] == "CUSTOM_GAME_SETUP"
+                or priv_presence["partyPresenceData"]["partyState"] == "CUSTOM_GAME_SETUP"
             ):
                 gamemode = "Custom Game"
             else:
@@ -253,7 +255,6 @@ try:
                     continue
                 Players = coregame_stats["Players"]
                 # data for chat to function
-                presence = presences.get_presence()
                 partyMembers = menu.get_party_members(Requests.puuid, presence)
                 partyMembersList = [a["Subject"] for a in partyMembers]
 
@@ -973,18 +974,22 @@ try:
             if (title := game_state_dict.get(game_state)) is None:
                 # program_exit(1)
                 time.sleep(9)
+            
+            title_parts = [f"VALORANT status: {title}"]
+            
+            if game_state == "PREGAME" and pregame_stats is not None and cfg.get_feature_flag("starting_side"):
+                team_side = "Attacker" if pregame_stats["AllyTeam"]["TeamID"] == "Red" else "Defender"
+                title_parts.append(f" | {colr(team_side, fore=(76, 151, 237) if team_side == 'Defender' else (238, 77, 77))}")
+            
             if cfg.get_feature_flag("server_id") and server != "":
                 parts = server.split('.')
                 if len(parts) > 2:
                     short_serverID = '.'.join(parts[2:])
                 else:
                     short_serverID = server
-
-                table.set_title(
-                    f"VALORANT status: {title} {colr('- ' + short_serverID, fore=(200, 200, 200))}"
-                )
-            else:
-                table.set_title(f"VALORANT status: {title}")
+                title_parts.append(f" {colr('- ' + short_serverID, fore=(200, 200, 200))}")
+            
+            table.set_title(''.join(title_parts))
             
             if title is not None:
                 if cfg.get_feature_flag("auto_hide_leaderboard") and (

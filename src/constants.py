@@ -199,7 +199,7 @@ DEFAULT_CONFIG = {
             "earned_rr": True,
             "peakrank": True,
             "previousrank" : False,
-            "leaderboard": False,
+            "leaderboard": True,
             "headshot_percent": True,
             "winrate": True,
             "kd": True,
@@ -213,7 +213,7 @@ DEFAULT_CONFIG = {
             "peak_rank_act": True,
             "discord_rpc": False,
             "aggregate_rank_rr": True,
-            "server_id": False,
+            "server_id": True,
             "short_ranks": False,
             "truncate_skins": True,
             "truncate_names": True

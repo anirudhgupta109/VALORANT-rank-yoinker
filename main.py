@@ -254,9 +254,14 @@ try:
                 log(f"first game state: {game_state}")
             else:
                 previous_game_state = game_state
-                game_state = asyncio.run(
-                    Wss.recconect_to_websocket(game_state)
-                )
+                if Requests.is_deceive_running():
+                    presence = presences.get_presence()
+                    private_presence = presences.get_private_presence(presence)
+                    game_state = presences.get_game_state(presence)
+                else:
+                    game_state = asyncio.run(
+                        Wss.recconect_to_websocket(game_state)
+                    )
                 # We invalidate the cached responses when going from any state to menus
                 if previous_game_state != game_state and game_state == "MENUS":
                     rank.invalidate_cached_responses()
@@ -305,6 +310,10 @@ try:
                 pstats.clear_runtime_cache()
             continue
 
+        if game_state == lastGameState:
+            time.sleep(cfg.cooldown)
+            continue
+
         if True:
             log(f"getting new {game_state} scoreboard")
             lastGameState = game_state
@@ -329,10 +338,12 @@ try:
                 party_state = priv_presence["partyPresenceData"]["partyState"]
             elif "partyState" in priv_presence: # Check for flattened structure
                 party_state = priv_presence["partyState"]
+            elif "fallback_game_state" in priv_presence:
+                party_state = "DEFAULT"
             else:
                 # No known structure found, log and fail
                 log("ERROR: Unknown presence API structure in 'main'.")
-                party_state = priv_presence["partyPresenceData"]["partyState"]
+                party_state = "DEFAULT"
             
             if (
                 priv_presence["provisioningFlow"] == "CustomGame"

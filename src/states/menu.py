@@ -45,9 +45,14 @@ class Menu:
     def get_party_members(self, self_puuid, presencesDICT):
         res = []
         party_id = ""
-        
+
+        fallback_mode = False
+
         for presence in presencesDICT:
             if presence["puuid"] == self_puuid:
+                if presence.get("private") == "" and presence.get("product") == "valorant":
+                    fallback_mode = True
+                    break
                 decodedPresence = self.presences.decode_presence(presence["private"])
                 if decodedPresence["isValid"]:
                     
@@ -65,12 +70,20 @@ class Menu:
                         party_id = decodedPresence["partyPresenceData"]["partyId"]
                         
                     res.append({"Subject": presence["puuid"], "PlayerIdentity": {"AccountLevel": account_level}})
-        
+
+        if fallback_mode:
+            self.log("get_party_members: Using fallback mode - returning self only")
+            res.append({"Subject": self_puuid, "PlayerIdentity": {"AccountLevel": 0}})
+            return res
+
         # Find other party members
         for presence in presencesDICT:
             if presence["puuid"] == self_puuid:
                 continue # Skip self
-                
+
+            if presence.get("private") == "" and presence.get("product") == "valorant":
+                continue
+
             decodedPresence = self.presences.decode_presence(presence["private"])
             if decodedPresence["isValid"]:
                 

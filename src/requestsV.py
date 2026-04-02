@@ -151,28 +151,26 @@ class Requests:
             elif url_type == "local":
                 local_headers = {'Authorization': 'Basic ' + base64.b64encode(
                     ('riot:' + self.lockfile['password']).encode()).decode()}
-                
-                max_retries = 3
-                for i in range(max_retries):
+
+                for i in range(3):
                     try:
                         response = requests.request(method, f"https://127.0.0.1:{self.lockfile['port']}{endpoint}",
-                                                    headers=local_headers,
-                                                    verify=False, timeout=5)
-                        if response.status_code == 200 and response.json().get("errorCode") != "RPC_ERROR":
+                                                    headers=local_headers, verify=False, timeout=5)
+
+                        if response.status_code == 503 or response.status_code == 500 or \
+                           (response.status_code == 200 and response.json().get("errorCode") == "RPC_ERROR"):
+                            return self._get_presence_via_glz()
+
+                        if response.status_code == 200:
+                            data = response.json()
                             if endpoint != "/chat/v4/presences":
-                                self.log(
-                                    f"fetch: url: '{url_type}', endpoint: {endpoint}, method: {method},"
-                                    f" response code: {response.status_code}")
-                            return response.json()
-                        else:
-                            self.log(f"Local API is not ready yet (RPC_ERROR or status code {response.status_code}). Retrying...")
-                            time.sleep(5)
-                    except (requests.exceptions.RequestException, ConnectionError):
-                        self.log(f"Connection error on local request. Retrying... ({i + 1}/{max_retries})")
-                        time.sleep(5)
-                
-                self.log(f"Failed to connect to local client after {max_retries} attempts.")
-                return None
+                                self.log(f"fetch: url: '{url_type}', endpoint: {endpoint}, method: {method}, response code: {response.status_code}")
+                            return data
+                    except:
+                        pass
+                    time.sleep(5)
+
+                return self._get_presence_via_glz()
             elif url_type == "custom":
                 response = requests.request(method, f"{endpoint}", headers=self.get_headers(), verify=False)
                 self.log(
@@ -188,24 +186,28 @@ class Requests:
     def get_region(self):
         path = os.path.join(os.getenv('LOCALAPPDATA'), R'VALORANT\Saved\Logs\ShooterGame.log')
         with open(path, "r", encoding="utf8") as file:
-            while True:
-                line = file.readline()
-                if '.a.pvp.net/account-xp/v1/' in line:
+            lines = file.readlines()
+            pd_url = None
+            glz_url = None
+            for line in reversed(lines):
+                if '.a.pvp.net/account-xp/v1/' in line and pd_url is None:
                     pd_url = line.split('.a.pvp.net/account-xp/v1/')[0].split('.')[-1]
-                elif 'https://glz' in line:
+                elif 'https://glz' in line and glz_url is None:
                     glz_url = [(line.split('https://glz-')[1].split(".")[0]),
                                (line.split('https://glz-')[1].split(".")[1])]
-                if "pd_url" in locals().keys() and "glz_url" in locals().keys():
-                    self.log(f"got region from logs '{[pd_url, glz_url]}'")
-                    if pd_url == "pbe":
-                        return ["na", "na-1", "na"]
-                    return [pd_url, glz_url]
+                if pd_url and glz_url:
+                    break
+            if pd_url and glz_url:
+                self.log(f"got region from logs '{[pd_url, glz_url]}'")
+                if pd_url == "pbe":
+                    return ["na", "na-1", "na"]
+                return [pd_url, glz_url]
 
     def get_current_version(self):
         path = os.path.join(os.getenv('LOCALAPPDATA'), R'VALORANT\Saved\Logs\ShooterGame.log')
         with open(path, "r", encoding="utf8") as file:
-            while True:
-                line = file.readline()
+            lines = file.readlines()
+            for line in reversed(lines):
                 if 'CI server version:' in line:
                     version_without_shipping = line.split('CI server version: ')[1].strip()
                     version = version_without_shipping.split("-")
@@ -267,3 +269,15 @@ class Requests:
             }
             self.headers = headers
         return self.headers
+
+    @staticmethod
+    def is_deceive_running():
+        import subprocess
+        try:
+            output = subprocess.check_output(
+                ["tasklist", "/FI", "IMAGENAME eq Deceive.exe", "/FO", "CSV", "/NH"],
+                creationflags=subprocess.CREATE_NO_WINDOW
+            ).decode().lower()
+            return "deceive.exe" in output
+        except:
+            return False

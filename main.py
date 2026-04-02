@@ -369,10 +369,16 @@ try:
                     time.sleep(2)
                 log(f"first game state: {game_state}")
             else:
+                if Requests.is_deceive_running():
+                    presence = presences.get_presence()
+                    private_presence = presences.get_private_presence(presence)
+                    game_state = presences.get_game_state(presence)
+                else:
+                    game_state = asyncio.run(
+                        Wss.recconect_to_websocket(game_state)
+                    )
+
                 previous_game_state = game_state
-                game_state = asyncio.run(
-                    Wss.recconect_to_websocket(game_state)
-                )
                 if previous_game_state == "INGAME" and game_state != "INGAME":
                     queue_match_result_update(
                         active_match_context.get("match_id"),
@@ -433,6 +439,10 @@ try:
                 pstats.clear_runtime_cache()
             continue
 
+        if game_state == lastGameState:
+            time.sleep(cfg.cooldown)
+            continue
+
         if True:
             log(f"getting new {game_state} scoreboard")
             lastGameState = game_state
@@ -457,10 +467,12 @@ try:
                 party_state = priv_presence["partyPresenceData"]["partyState"]
             elif "partyState" in priv_presence: # Check for flattened structure
                 party_state = priv_presence["partyState"]
+            elif "fallback_game_state" in priv_presence:
+                party_state = "DEFAULT"
             else:
                 # No known structure found, log and fail
                 log("ERROR: Unknown presence API structure in 'main'.")
-                party_state = priv_presence["partyPresenceData"]["partyState"]
+                party_state = "DEFAULT"
             
             if (
                 priv_presence["provisioningFlow"] == "CustomGame"

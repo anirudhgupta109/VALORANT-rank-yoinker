@@ -64,6 +64,24 @@ def get_ip():
     return IP
 
 
+def format_last_active(last_active_epoch):
+    if not last_active_epoch:
+        return "N/A"
+
+    try:
+        seconds_ago = max(0, int(time.time() - float(last_active_epoch)))
+    except (TypeError, ValueError):
+        return "N/A"
+
+    if seconds_ago < 60:
+        return "now"
+    if seconds_ago < 3600:
+        return f"{seconds_ago // 60}m ago"
+    if seconds_ago < 86400:
+        return f"{seconds_ago // 3600}h ago"
+    return f"{seconds_ago // 86400}d ago"
+
+
 try:
     Logging = Logging()
     log = Logging.log
@@ -547,6 +565,7 @@ try:
                         ranked_rating_earned = colors.get_rr_gradient(
                             rr_numeric_value, afk_penalty
                         )
+                        last_active = format_last_active(ppstats.get("LastActiveEpoch"))
 
                         player_level = player["PlayerIdentity"].get("AccountLevel")
 
@@ -661,6 +680,7 @@ try:
                                 kd,
                                 level,
                                 ranked_rating_earned,
+                                last_active,
                             ]
                         )
 
@@ -676,6 +696,7 @@ try:
                             "kd": ppstats["kd"],
                             "headshotPercentage": ppstats["hs"],
                             "winPercentage": f"{playerRank['wr']} ({playerRank['numberofgames']})",
+                            "lastActive": last_active,
                             "level": player_level,
                             "agentImgLink": loadouts_data["Players"][
                                 player["Subject"]
@@ -798,6 +819,7 @@ try:
                         ranked_rating_earned = colors.get_rr_gradient(
                             rr_numeric_value, afk_penalty
                         )
+                        last_active = format_last_active(ppstats.get("LastActiveEpoch"))
 
                         player_level = player["PlayerIdentity"].get("AccountLevel")
                         if player["PlayerIdentity"]["Incognito"]:
@@ -917,6 +939,7 @@ try:
                                 kd,
                                 level,
                                 ranked_rating_earned,
+                                last_active,
                             ]
                         )
 
@@ -932,6 +955,7 @@ try:
                             "kd": ppstats["kd"],
                             "headshotPercentage": ppstats["hs"],
                             "winPercentage": f"{playerRank['wr']} ({playerRank['numberofgames']})",
+                            "lastActive": last_active,
                         }
 
                         # bar()
@@ -999,6 +1023,7 @@ try:
                             ranked_rating_earned = colors.get_rr_gradient(
                                 rr_numeric_value, afk_penalty
                             )
+                            last_active = ""
 
                             player_level = player["PlayerIdentity"].get("AccountLevel")
                             PLcolor = colors.level_to_color(player_level)
@@ -1070,6 +1095,7 @@ try:
                                     kd,
                                     level,
                                     ranked_rating_earned,
+                                    last_active,
                                 ]
                             )
 
@@ -1083,6 +1109,7 @@ try:
                                 "kd": ppstats["kd"],
                                 "headshotPercentage": ppstats["hs"],
                                 "winPercentage": f"{playerRank['wr']} ({playerRank['numberofgames']})",
+                                "lastActive": format_last_active(ppstats.get("LastActiveEpoch")),
                             }
 
                             # bar()
@@ -1113,6 +1140,7 @@ try:
                     table.set_runtime_col_flag("Party", False)
                     table.set_runtime_col_flag("Agent", False)
                     table.set_runtime_col_flag(cfg.weapon.capitalize(), False)
+                    table.set_runtime_col_flag("Last Active", False)
 
                 if game_state == "INGAME":
                     if isRange:

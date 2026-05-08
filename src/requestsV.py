@@ -97,7 +97,7 @@ class Requests:
             print(color("[WARNING] Failed processing status - skipping...", fore=(255, 165, 0)))
             return
             
-    def fetch(self, url_type: str, endpoint: str, method: str, rate_limit_seconds=5):
+    def fetch(self, url_type: str, endpoint: str, method: str, rate_limit_seconds=5, body=None):
         try:
             if url_type == "glz":
                 response = requests.request(method, self.glz_url + endpoint, headers=self.get_headers(), verify=False)
@@ -155,7 +155,7 @@ class Requests:
                 for i in range(3):
                     try:
                         response = requests.request(method, f"https://127.0.0.1:{self.lockfile['port']}{endpoint}",
-                                                    headers=local_headers, verify=False, timeout=5)
+                                                    headers=local_headers, json=body, verify=False, timeout=5)
 
                         if response.status_code == 503 or response.status_code == 500 or \
                            (response.status_code == 200 and response.json().get("errorCode") == "RPC_ERROR"):

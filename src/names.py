@@ -1,4 +1,5 @@
 import requests
+from src.constants import hide_names
 
 
 class Names:
@@ -19,14 +20,32 @@ class Names:
             self.log(f'{response.json()["errorCode"]}, new token retrieved')
             response = requests.put(self.Requests.pd_url + "/name-service/v2/players", headers=self.Requests.get_headers(refresh=True), json=puuids, verify=False)
 
-        name_dict = {player["Subject"]: f"{player['GameName']}#{player['TagLine']}"
-                     for player in response.json()}
+        hidden_puuids = []
+        name_dict = {}
+        for player in response.json():
+            puuid = player["Subject"]
+            if player.get("GameName"):
+                name_dict[puuid] = f"{player['GameName']}#{player['TagLine']}"
+            else:
+                hidden_puuids.append(puuid)
+                name_dict[puuid] = ""
+
+        if hidden_puuids and not hide_names:
+            name_dict.update(self._get_hidden_names(hidden_puuids))
+
         return name_dict
 
+    def _get_hidden_names(self, puuids):
+        try:
+            response = self.Requests.fetch(url_type="local", endpoint="/player-account/lookup/v2/namesets-for-puuids", method="post", body={"puuids": puuids})
+            if response:
+                return {item["puuid"]: f"{item['alias']['gameName']}#{item['alias']['tagLine']}" for item in response.get("namesets", []) if item.get("alias", {}).get("gameName")}
+        except Exception as e:
+            self.log(f"Local API lookup failed: {e}")
+        return {}
+
     def get_names_from_puuids(self, players):
-        players_puuid = []
-        for player in players:
-            players_puuid.append(player["Subject"])
+        players_puuid = [player["Subject"] for player in players]
         return self.get_multiple_names_from_puuid(players_puuid)
 
     def get_players_puuid(self, Players):

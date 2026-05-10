@@ -9,44 +9,34 @@ class Names:
         self.log = log
 
     def get_name_from_puuid(self, puuid):
-        response = requests.put(self.Requests.pd_url + "/name-service/v2/players", headers=self.Requests.get_headers(), json=[puuid], verify=False)
-        return response.json()[0]["GameName"] + "#" + response.json()[0]["TagLine"]
+        names = self.get_multiple_names_from_puuid([puuid])
+        return names.get(puuid, "")
 
+    def _fetch_names_local(self, puuids):
+        response = self.Requests.fetch(url_type="local", endpoint="/player-account/lookup/v2/namesets-for-puuids", method="post", body={"puuids": puuids})
+        if response and response.get("namesets"):
+            return {item["puuid"]: f"{item['alias']['gameName']}#{item['alias']['tagLine']}" for item in response["namesets"] if item.get("alias", {}).get("gameName")}
+        return {}
 
     def get_multiple_names_from_puuid(self, puuids):
-        response = requests.put(self.Requests.pd_url + "/name-service/v2/players", headers=self.Requests.get_headers(), json=puuids, verify=False)
+        name_dict = self._fetch_names_local(puuids)
+        failed_puuids = [p for p in puuids if p not in name_dict]
 
-        if 'errorCode' in response.json():
-            self.log(f'{response.json()["errorCode"]}, new token retrieved')
-            response = requests.put(self.Requests.pd_url + "/name-service/v2/players", headers=self.Requests.get_headers(refresh=True), json=puuids, verify=False)
-
-        hidden_puuids = []
-        name_dict = {}
-        for player in response.json():
-            puuid = player["Subject"]
-            if player.get("GameName"):
-                name_dict[puuid] = f"{player['GameName']}#{player['TagLine']}"
-            else:
-                hidden_puuids.append(puuid)
-                name_dict[puuid] = ""
-
-        if hidden_puuids and not hide_names:
-            name_dict.update(self._get_hidden_names(hidden_puuids))
+        if failed_puuids:
+            try:
+                pd_response = requests.put(self.Requests.pd_url + "/name-service/v2/players", headers=self.Requests.get_headers(), json=failed_puuids, verify=False)
+                if pd_response.ok and 'errorCode' not in pd_response.json():
+                    name_dict.update({p["Subject"]: f"{p['GameName']}#{p['TagLine']}" for p in pd_response.json() if p.get("GameName")})
+            except Exception as e:
+                self.log(f"PD API lookup failed: {e}")
 
         return name_dict
 
     def _get_hidden_names(self, puuids):
-        try:
-            response = self.Requests.fetch(url_type="local", endpoint="/player-account/lookup/v2/namesets-for-puuids", method="post", body={"puuids": puuids})
-            if response:
-                return {item["puuid"]: f"{item['alias']['gameName']}#{item['alias']['tagLine']}" for item in response.get("namesets", []) if item.get("alias", {}).get("gameName")}
-        except Exception as e:
-            self.log(f"Local API lookup failed: {e}")
-        return {}
+        return self.get_multiple_names_from_puuid(puuids)
 
     def get_names_from_puuids(self, players):
-        players_puuid = [player["Subject"] for player in players]
-        return self.get_multiple_names_from_puuid(players_puuid)
+        return self.get_multiple_names_from_puuid([p["Subject"] for p in players])
 
     def get_players_puuid(self, Players):
-        return [player["Subject"] for player in Players]
+        return [p["Subject"] for p in Players]

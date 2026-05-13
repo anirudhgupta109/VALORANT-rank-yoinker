@@ -88,10 +88,10 @@ def get_short_server_name(server: str) -> str:
         return ""
 
     lower_server = server.lower()
-    if "ap-gp-" in lower_server:
-        parts = lower_server.split("ap-gp-")
-        if len(parts) > 1:
-            return parts[1].split("-")[0].upper()
+    gp_index = lower_server.find("gp-")
+    if gp_index != -1:
+        after_gp = lower_server[gp_index + 3:]
+        return after_gp.split("-")[0].upper()
 
     parts = server.split('.')
     if len(parts) > 2:

@@ -43,6 +43,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 os.system(f"title VALORANT rank yoinker v{version}")
 
 server = ""
+team_side = None
 
 
 def program_exit(status: int):  # so we don't need to import the entire sys module
@@ -1151,6 +1152,10 @@ try:
             elif cfg.get_feature_flag("server_id") and server:
                 short_server = get_short_server_name(server)
                 title_parts.append(f" | {colr(short_server, fore=(200, 200, 200))}")
+
+            if game_state == "PREGAME" and pregame_stats is not None and cfg.get_feature_flag("starting_side"):
+                team_side = "Attacker" if pregame_stats["AllyTeam"]["TeamID"] == "Red" else "Defender"
+                title_parts.append(f" | {colr(team_side, fore=(76, 151, 237) if team_side == 'Defender' else (238, 77, 77))}")
             
             table.set_title(''.join(title_parts))
             

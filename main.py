@@ -82,6 +82,22 @@ def format_last_active(last_active_epoch):
     return f"{seconds_ago // 86400}d ago"
 
 
+def get_short_server_name(server: str) -> str:
+    if not server:
+        return ""
+
+    lower_server = server.lower()
+    if "ap-gp-" in lower_server:
+        parts = lower_server.split("ap-gp-")
+        if len(parts) > 1:
+            return parts[1].split("-")[0].upper()
+
+    parts = server.split('.')
+    if len(parts) > 2:
+        return '.'.join(parts[2:])
+    return server
+
+
 try:
     Logging = Logging()
     log = Logging.log
@@ -345,6 +361,7 @@ try:
                 os.system("cls")
 
             is_leaderboard_needed = False
+            current_map_name = None
             
             # get new presence
             presence = presences.get_presence()
@@ -408,6 +425,8 @@ try:
                 Wss.set_player_data(players_data)
 
                 server = coregame_stats.get("GamePodID", "")
+                map_id = coregame_stats.get("MapID", "").lower()
+                current_map_name = map_urls.get(map_id)
                 presences.wait_for_presence(namesClass.get_players_puuid(Players))
                 names = namesClass.get_names_from_puuids(Players)
                 loadouts_arr = loadoutsClass.get_match_loadouts(
@@ -738,6 +757,8 @@ try:
                 if pregame_stats == None:
                     continue
                 server = pregame_stats.get("GamePodID", "")
+                map_id = pregame_stats.get("MapID", "").lower()
+                current_map_name = map_urls.get(map_id)
                 Players = pregame_stats["AllyTeam"]["Players"]
                 presences.wait_for_presence(namesClass.get_players_puuid(Players))
                 names = namesClass.get_names_from_puuids(Players)
@@ -1120,13 +1141,16 @@ try:
             
             title_parts = [f"VALORANT status: {title}"]
 
-            if cfg.get_feature_flag("server_id") and server != "":
-                parts = server.split('.')
-                if len(parts) > 2:
-                    short_serverID = '.'.join(parts[2:])
-                else:
-                    short_serverID = server
-                title_parts.append(f" {colr('- ' + short_serverID, fore=(200, 200, 200))}")
+            if current_map_name and game_state in ("INGAME", "PREGAME"):
+                title_parts.append(f" | {colr(gamemode, fore=(0, 191, 255))}")
+                title_parts.append(f" | {colr(current_map_name, fore=(255, 255, 0))}")
+                if server:
+                    short_server = get_short_server_name(server)
+                    if short_server:
+                        title_parts.append(f" | {colr(short_server, fore=(255, 182, 193))}")
+            elif cfg.get_feature_flag("server_id") and server:
+                short_server = get_short_server_name(server)
+                title_parts.append(f" | {colr(short_server, fore=(200, 200, 200))}")
             
             table.set_title(''.join(title_parts))
             

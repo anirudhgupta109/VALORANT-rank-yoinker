@@ -1145,13 +1145,13 @@ try:
             if current_map_name and game_state in ("INGAME", "PREGAME"):
                 title_parts.append(f" | {colr(gamemode, fore=(0, 191, 255))}")
                 title_parts.append(f" | {colr(current_map_name, fore=(255, 255, 0))}")
-                if server:
-                    short_server = get_short_server_name(server)
-                    if short_server:
-                        title_parts.append(f" | {colr(short_server, fore=(255, 182, 193))}")
-            elif cfg.get_feature_flag("server_id") and server:
+
+            if server:
                 short_server = get_short_server_name(server)
-                title_parts.append(f" | {colr(short_server, fore=(200, 200, 200))}")
+                if short_server:
+                    server_color = (255, 182, 193) if (game_state in ("INGAME", "PREGAME") and current_map_name) else (200, 200, 200) if cfg.get_feature_flag("server_id") else None
+                    if server_color:
+                        title_parts.append(f" | {colr(short_server, fore=server_color)}")
 
             if game_state == "PREGAME" and pregame_stats is not None and cfg.get_feature_flag("starting_side"):
                 team_side = "Attacker" if pregame_stats["AllyTeam"]["TeamID"] == "Red" else "Defender"

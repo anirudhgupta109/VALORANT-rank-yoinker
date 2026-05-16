@@ -754,6 +754,7 @@ try:
                         # bar()
             elif game_state == "PREGAME":
                 already_played_with = []
+                loadouts = {}
                 pregame_stats = pregame.get_pregame_stats()
                 if pregame_stats == None:
                     continue
@@ -761,9 +762,21 @@ try:
                 map_id = pregame_stats.get("MapID", "").lower()
                 current_map_name = map_urls.get(map_id)
                 Players = pregame_stats["AllyTeam"]["Players"]
+                for p in Players: p["TeamID"] = pregame_stats["AllyTeam"]["TeamID"]
+                pregame_match_id = pregame_stats.get("ID")
+
+                # utilize loadouts API for name extraction (enemy discovery)
+                try:
+                    pregame_loadouts = loadoutsClass.get_pregame_loadouts(pregame_match_id)
+                    ally_puuids = [p["Subject"] for p in Players]
+                    enemy_team_id = "Red" if pregame_stats["AllyTeam"]["TeamID"] == "Blue" else "Blue"
+                    for l in pregame_loadouts.get("Loadouts", []):
+                        if l["Subject"] not in ally_puuids:
+                            Players.append({"Subject": l["Subject"], "CharacterID": "", "CharacterSelectionState": "", "PlayerIdentity": {"AccountLevel": 0, "Incognito": False, "HideAccountLevel": True}, "TeamID": enemy_team_id})
+                except: pass
+
                 presences.wait_for_presence(namesClass.get_players_puuid(Players))
                 names = namesClass.get_names_from_puuids(Players)
-                pregame_match_id = pregame_stats.get("ID")
                 ensure_match_player_cache(pregame_match_id)
                 # temporary until other regions gets fixed?
                 # loadouts = loadoutsClass.get_match_loadouts(pregame.get_pregame_match_id(), pregame_stats, cfg.weapon, valoApiSkins, names,
@@ -784,8 +797,11 @@ try:
                         ),
                         reverse=True,
                     )
+                    Players.sort(key=lambda Players: Players["TeamID"], reverse=True)
                     partyCount = 0
                     partyIcons = {}
+                    lastTeamBoolean = False
+                    lastTeam = "Red"
                     for player in Players:
                         status.update(
                             f"Loading players... [{playersLoaded}/{len(Players)}]"
@@ -802,7 +818,6 @@ try:
                                     )
                                     # PARTY_ICON
                                     party_icon = PARTYICONLIST[partyCount]
-                                    partyNum = partyCount + 1
                                 else:
                                     # PARTY_ICON
                                     party_icon = partyIcons[party]
@@ -846,7 +861,7 @@ try:
                         player_level = player["PlayerIdentity"].get("AccountLevel")
                         if player["PlayerIdentity"]["Incognito"]:
                             NameColor = colors.get_color_from_team(
-                                pregame_stats["Teams"][0]["TeamID"],
+                                player["TeamID"],
                                 names[player["Subject"]],
                                 player["Subject"],
                                 Requests.puuid,
@@ -855,12 +870,18 @@ try:
                             )
                         else:
                             NameColor = colors.get_color_from_team(
-                                pregame_stats["Teams"][0]["TeamID"],
+                                player["TeamID"],
                                 names[player["Subject"]],
                                 player["Subject"],
                                 Requests.puuid,
                                 party_members=partyMembersList,
                             )
+
+                        if lastTeam != player["TeamID"]:
+                            if lastTeamBoolean:
+                                table.add_empty_row()
+                        lastTeam = player["TeamID"]
+                        lastTeamBoolean = True
 
                         if player["PlayerIdentity"]["HideAccountLevel"]:
                             if (
@@ -898,9 +919,7 @@ try:
                         # VIEWS
                         # views = get_views(names[player["Subject"]])
 
-                        # temporary until other regions gets fixed?
-                        # skin
-                        # skin = loadouts[player["Subject"]]
+                        skin = loadouts.get(player["Subject"], "")
 
                         # RANK
                         rankName = Ranks[playerRank["rank"]]
@@ -950,7 +969,7 @@ try:
                                 agent,
                                 name,
                                 # views,
-                                "",
+                                skin,
                                 rankName,
                                 rr,
                                 peakRank,

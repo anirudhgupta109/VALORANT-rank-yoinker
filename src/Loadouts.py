@@ -14,6 +14,9 @@ class Loadouts:
         self.Server = Server
         self.current_map = current_map
 
+    def get_pregame_loadouts(self, match_id):
+        return self.Requests.fetch("glz", f"/pregame/v1/matches/{match_id}/loadouts", "get")
+
     def get_match_loadouts(self, match_id, players, weaponChoose, valoApiSkins, names, state="game"):
         playersBackup = players
         weaponLists = {}
@@ -27,8 +30,7 @@ class Loadouts:
             pregame_stats = players
             players = players["AllyTeam"]["Players"]
             team_id = pregame_stats['Teams'][0]['TeamID']
-            PlayerInventorys = self.Requests.fetch(
-                "glz", f"/pregame/v1/matches/{match_id}/loadouts", "get")
+            PlayerInventorys = self.get_pregame_loadouts(match_id)
 
         # subject (player UUID) -> loadout lookup
         loadout_by_subject = {}

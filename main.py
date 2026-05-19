@@ -538,12 +538,13 @@ try:
                                         already_seen = True
 
                         party_icon = ""
+                        partyNum = 0
                         # set party premade icon
                         for party in partyOBJ:
                             if player["Subject"] in partyOBJ[party]:
                                 if party not in partyIcons:
                                     partyIcons.update(
-                                        {party: PARTYICONLIST[partyCount]}
+                                        {party: (PARTYICONLIST[partyCount], partyCount + 1)}
                                     )
                                     # PARTY_ICON
                                     party_icon = PARTYICONLIST[partyCount]
@@ -551,7 +552,7 @@ try:
                                     partyCount += 1
                                 else:
                                     # PARTY_ICON
-                                    party_icon = partyIcons[party]
+                                    party_icon, partyNum = partyIcons[party]
                         playerRank, previousPlayerRank, ppstats = get_or_fetch_rank_and_stats(
                             player["Subject"], coregame_match_id
                         )
@@ -808,20 +809,22 @@ try:
                         )
                         playersLoaded += 1
                         party_icon = ""
+                        partyNum = 0
 
                         # set party premade icon
                         for party in partyOBJ:
                             if player["Subject"] in partyOBJ[party]:
                                 if party not in partyIcons:
                                     partyIcons.update(
-                                        {party: PARTYICONLIST[partyCount]}
+                                        {party: (PARTYICONLIST[partyCount], partyCount + 1)}
                                     )
                                     # PARTY_ICON
                                     party_icon = PARTYICONLIST[partyCount]
+                                    partyNum = partyCount + 1
+                                    partyCount += 1
                                 else:
                                     # PARTY_ICON
-                                    party_icon = partyIcons[party]
-                                partyCount += 1
+                                    party_icon, partyNum = partyIcons[party]
                         playerRank, previousPlayerRank, ppstats = get_or_fetch_rank_and_stats(
                             player["Subject"], pregame_match_id
                         )

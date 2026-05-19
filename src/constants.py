@@ -1,7 +1,7 @@
 import requests
 from src.colors import color
 
-version = "2.93"
+version = "2.94"
 enablePrivateLogging = True
 hide_names = False
 hide_levels = False

@@ -2,8 +2,8 @@ from src.colors import color
 
 version = "2.98"
 enablePrivateLogging = True
-hide_names = True
-hide_levels = True
+hide_names = False
+hide_levels = False
 
 gamemodes = {
     "newmap": "New Map",
@@ -203,21 +203,22 @@ DEFAULT_CONFIG = {
         "leaderboard": True,
         "headshot_percent": True,
         "winrate": True,
-        "kd": False,
+        "kd": True,
         "level": True,
-        "last_active": False
+        "last_active": True
     },
     "flags": {
         "last_played": True,
         "auto_hide_leaderboard": True,
         "pre_cls": False,
-        "game_chat": True,
+        "game_chat": False,
         "peak_rank_act": True,
-        "discord_rpc": True,
+        "discord_rpc": False,
         "aggregate_rank_rr": True,
-        "server_id": False,
+        "server_id": True,
         "short_ranks": False,
         "truncate_skins": True,
         "truncate_names": True,
+        "starting_side": True
     }
 }

@@ -1,3 +1,6 @@
+from src.constants import PARTYICONLIST
+
+
 class Menu:
     def __init__(self, Requests, log, presences):
         self.Requests = Requests
@@ -106,3 +109,99 @@ class Menu:
                     
         self.log(f"retrieved party members: {res}")
         return res
+
+    def process(self, presence, namesClass, rank, seasonID, previousSeasonID, pstats, cfg, colors, Ranks, table, rpc, heartbeat_data, richConsole, color, format_heartbeat_player, format_player_stats):
+        Players = self.get_party_members(self.Requests.puuid, presence)
+        names = namesClass.get_names_from_puuids(Players)
+        playersLoaded = 1
+        is_leaderboard_needed = False
+        with richConsole.status("Loading Players...") as status:
+            Players.sort(
+                key=lambda Players: Players["PlayerIdentity"].get(
+                    "AccountLevel"
+                ),
+                reverse=True,
+            )
+            seen = []
+            for player in Players:
+
+                if player["Subject"] not in seen:
+                    status.update(
+                        f"Loading players... [{playersLoaded}/{len(Players)}]"
+                    )
+                    playersLoaded += 1
+                    party_icon = PARTYICONLIST[0]
+                    playerRank = rank.get_rank(player["Subject"], seasonID)
+                    previousPlayerRank = rank.get_rank(
+                        player["Subject"], previousSeasonID
+                    )
+                    if player["Subject"] == self.Requests.puuid:
+                        if cfg.get_feature_flag("discord_rpc"):
+                            rpc.set_data(
+                                {
+                                    "rank": playerRank["rank"],
+                                    "rank_name": colors.escape_ansi(
+                                        Ranks[playerRank["rank"]]
+                                    )
+                                    + " | "
+                                    + str(playerRank["rr"])
+                                    + "rr",
+                                }
+                            )
+
+                    ppstats = pstats.get_stats(player["Subject"])
+                    
+                    stats_fmt = format_player_stats(playerRank, previousPlayerRank, ppstats, colors, Ranks, cfg)
+
+                    last_active = ""
+
+                    player_level = player["PlayerIdentity"].get("AccountLevel")
+                    PLcolor = colors.level_to_color(player_level)
+
+                    # AGENT
+                    agent = ""
+
+                    # NAME
+                    name = color(names[player["Subject"]], fore=(76, 151, 237))
+
+                    # LEADERBOARD
+                    leaderboard = playerRank["leaderboard"]
+                    if int(leaderboard) > 0:
+                        is_leaderboard_needed = True
+
+                    # LEVEL
+                    level = PLcolor
+
+                    table.add_row_table(
+                        [
+                            party_icon,
+                            agent,
+                            name,
+                            "",
+                            stats_fmt["rankName"],
+                            playerRank["rr"],
+                            stats_fmt["peakRank"],
+                            stats_fmt["previousRank"],
+                            leaderboard,
+                            stats_fmt["hs"],
+                            stats_fmt["wr"],
+                            ppstats["kd"],
+                            level,
+                            stats_fmt["rr_earned"],
+                            last_active,
+                        ]
+                    )
+
+                    heartbeat_data["players"][player["Subject"]] = format_heartbeat_player(
+                        names[player["Subject"]],
+                        playerRank,
+                        stats_fmt["peakRankAct"],
+                        player_level,
+                        ppstats,
+                        ""
+                    )
+                    seen.append(player["Subject"])
+        return is_leaderboard_needed
+
+
+

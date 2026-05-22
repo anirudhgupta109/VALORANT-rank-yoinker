@@ -65,14 +65,16 @@ class Presences:
 
         if presences and isinstance(presences, list):
             for presence in presences:
-                if presence.get('puuid') == self.Requests.puuid and 'game_state' in presence:
+                if presence.get('puuid', '').lower() == self.Requests.puuid.lower() and 'game_state' in presence:
                     return presence['game_state']
 
         return None
 
     def get_private_presence(self, presences):
+        if presences is None:
+            return None
         for presence in presences:
-            if presence['puuid'] == self.Requests.puuid:
+            if presence.get('puuid', '').lower() == self.Requests.puuid.lower():
                 #preventing vry from crashing when lol is open
                 # print(presence)
                 # print(presence.get("championId"))
@@ -88,7 +90,7 @@ class Presences:
                             "fallback_game_state": True
                         }
 
-                    if presence['private'] == "":
+                    if presence.get('private') == "" or presence.get('private') is None:
                         return None
                     decoded_private = json.loads(base64.b64decode(presence['private']))
                     # Debug

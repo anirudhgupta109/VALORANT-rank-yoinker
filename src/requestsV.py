@@ -281,3 +281,8 @@ class Requests:
             return "deceive.exe" in output
         except:
             return False
+
+    def _get_presence_via_glz(self):
+        # This is a placeholder to prevent AttributeError in fetch()
+        # The actual logic is in Presences class, but fetch() tries to call it on self.
+        return None

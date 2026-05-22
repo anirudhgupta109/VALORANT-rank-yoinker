@@ -7,7 +7,8 @@ root_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file_
 sys.path.append(root_path)
 
 from src.requestsV import Requests
-from src.constants import version as VRY_VERSION, AGENTS
+from src.constants import version as VRY_VERSION
+from src.content import Content
 
 urllib3.disable_warnings()
 
@@ -20,17 +21,25 @@ class MockError:
 
 class Instalocker:
     def __init__(self, agent):
-        self.agent = agent.lower()
-        self.uuid = AGENTS.get(self.agent)
-        if not self.uuid:
-            print(f"Unknown agent: {agent}")
-            print("Available:", ", ".join(sorted(AGENTS.keys())))
-            sys.exit(1)
-        
         # Requests(version, log_function, Error_class)
         self.requests = Requests(VRY_VERSION, lambda x: None, MockError())
+        self.content = Content(self.requests, lambda x: None)
+        
+        print("[INSTALOCKER] Fetching agents...")
+        all_agents = self.content.get_all_agents()
+        # Reverse map {name.lower(): uuid} and filter out empty entries
+        self.agents_map = {name.lower(): uuid for uuid, name in all_agents.items() if name}
+        
+        self.agent = agent.lower()
+        self.uuid = self.agents_map.get(self.agent)
+        
+        if not self.uuid:
+            print(f"Unknown agent: {agent}")
+            print("Available:", ", ".join(sorted(self.agents_map.keys())))
+            sys.exit(1)
+        
         self.puuid = self.requests.puuid
-        print(f"[INSTALOCKER] Target: {self.agent}")
+        print(f"[INSTALOCKER] Target: {self.agent} ({self.uuid})")
 
     def run(self):
         print(f"[INSTALOCKER] Waiting for match...")

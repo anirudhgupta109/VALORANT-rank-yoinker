@@ -142,15 +142,15 @@ class Loadouts:
             # append sprays to field
 
             final_json[subject].update(
-                {"Level": player["PlayerIdentity"]["AccountLevel"]})
+                {"Level": player.get("PlayerIdentity", {}).get("AccountLevel")})
 
             for title in valoApiTitles.json()["data"]:
-                if title["uuid"] == player["PlayerIdentity"]["PlayerTitleID"]:
+                if title["uuid"] == player.get("PlayerIdentity", {}).get("PlayerTitleID"):
                     final_json[subject].update(
                         {"Title": title["titleText"]})
 
             for PCard in valoApiPlayerCards.json()["data"]:
-                if PCard["uuid"] == player["PlayerIdentity"]["PlayerCardID"]:
+                if PCard["uuid"] == player.get("PlayerIdentity", {}).get("PlayerCardID"):
                     final_json[subject].update(
                         {"PlayerCard": PCard["largeArt"]})
 

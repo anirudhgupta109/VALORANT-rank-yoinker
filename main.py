@@ -536,7 +536,7 @@ try:
                             player["Subject"]: {
                                 "team": player["TeamID"],
                                 "agent": player["CharacterID"],
-                                "streamer_mode": player["PlayerIdentity"]["Incognito"],
+                                "streamer_mode": player.get("PlayerIdentity", {}).get("Incognito"),
                             }
                         }
                     )
@@ -567,9 +567,7 @@ try:
                     )
                     # log(f"retrieved names dict: {names}")
                     Players.sort(
-                        key=lambda Players: Players["PlayerIdentity"].get(
-                            "AccountLevel"
-                        ),
+                        key=lambda p: p.get("PlayerIdentity", {}).get("AccountLevel", 0),
                         reverse=True,
                     )
                     Players.sort(key=lambda Players: Players["TeamID"], reverse=True)
@@ -612,7 +610,7 @@ try:
                             )
                             if summary is not None:
                                 already_seen = True
-                                if player["PlayerIdentity"]["Incognito"] and hide_names:
+                                if player.get("PlayerIdentity", {}).get("Incognito") and hide_names:
                                     team_string = "your" if player["TeamID"] == allyTeam else "enemy"
                                     summary["name"] = (
                                         agent_dict.get(player["CharacterID"].lower(), "Unknown")
@@ -665,9 +663,9 @@ try:
                         )
                         last_active = format_last_active(ppstats.get("LastActiveEpoch"))
 
-                        player_level = player["PlayerIdentity"].get("AccountLevel")
+                        player_level = player.get("PlayerIdentity", {}).get("AccountLevel")
 
-                        if player["PlayerIdentity"]["Incognito"]:
+                        if player.get("PlayerIdentity", {}).get("Incognito"):
                             Namecolor = colors.get_color_from_team(
                                 player["TeamID"],
                                 names[player["Subject"]],
@@ -691,7 +689,7 @@ try:
                                 table.add_empty_row()
                         lastTeam = player["TeamID"]
                         lastTeamBoolean = True
-                        if player["PlayerIdentity"]["HideAccountLevel"]:
+                        if player.get("PlayerIdentity", {}).get("HideAccountLevel"):
                             if (
                                 player["Subject"] == Requests.puuid
                                 or player["Subject"] in partyMembersList
@@ -869,9 +867,7 @@ try:
                     partyMembersList = [a["Subject"] for a in partyMembers]
                     # log(f"retrieved names dict: {names}")
                     Players.sort(
-                        key=lambda Players: Players["PlayerIdentity"].get(
-                            "AccountLevel"
-                        ),
+                        key=lambda p: p.get("PlayerIdentity", {}).get("AccountLevel", 0),
                         reverse=True,
                     )
                     Players.sort(key=lambda Players: Players["TeamID"], reverse=True)
@@ -928,8 +924,8 @@ try:
                         )
                         last_active = format_last_active(ppstats.get("LastActiveEpoch"))
 
-                        player_level = player["PlayerIdentity"].get("AccountLevel")
-                        if player["PlayerIdentity"]["Incognito"]:
+                        player_level = player.get("PlayerIdentity", {}).get("AccountLevel")
+                        if player.get("PlayerIdentity", {}).get("Incognito"):
                             NameColor = colors.get_color_from_team(
                                 player["TeamID"],
                                 names[player["Subject"]],
@@ -953,7 +949,7 @@ try:
                         lastTeam = player["TeamID"]
                         lastTeamBoolean = True
 
-                        if player["PlayerIdentity"]["HideAccountLevel"]:
+                        if player.get("PlayerIdentity", {}).get("HideAccountLevel"):
                             if (
                                 player["Subject"] == Requests.puuid
                                 or player["Subject"] in partyMembersList
@@ -1079,9 +1075,7 @@ try:
                 with richConsole.status("Loading Players...") as status:
                     # log(f"retrieved names dict: {names}")
                     Players.sort(
-                        key=lambda Players: Players["PlayerIdentity"].get(
-                            "AccountLevel"
-                        ),
+                        key=lambda p: p.get("PlayerIdentity", {}).get("AccountLevel", 0),
                         reverse=True,
                     )
                     seen = []
@@ -1122,7 +1116,7 @@ try:
                             )
                             last_active = ""
 
-                            player_level = player["PlayerIdentity"].get("AccountLevel")
+                            player_level = player.get("PlayerIdentity", {}).get("AccountLevel")
                             PLcolor = colors.level_to_color(player_level)
 
                             # AGENT

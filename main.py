@@ -41,8 +41,6 @@ from src.account_manager.account_auth import AccountAuth
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-PROJECT_ROOT = Path(__file__).parent.resolve()
-
 os.system(f"title VALORANT rank yoinker v{version}")
 
 server = ""
@@ -1298,7 +1296,7 @@ except:
     print(
         color(
             "The program has encountered an error. If the problem persists, please reach support"
-            f" with the logs found in {os.getcwd()}\\logs",
+            f" with the logs found in {os.path.join(PROJECT_ROOT, 'logs')}",
             fore=(255, 0, 0),
         )
     )

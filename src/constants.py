@@ -1,4 +1,7 @@
+from pathlib import Path
 from src.colors import color
+
+PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
 version = "2.99"
 enablePrivateLogging = True

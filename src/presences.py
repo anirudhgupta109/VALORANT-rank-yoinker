@@ -13,7 +13,7 @@ class Presences:
 
         presences = self.Requests.fetch(url_type="local", endpoint="/chat/v4/presences", method="get")
         if presences is None:
-            return None
+            return self._get_presence_via_glz()
         return presences['presences']
 
     def _get_presence_via_glz(self):

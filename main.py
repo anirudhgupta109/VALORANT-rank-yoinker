@@ -488,6 +488,12 @@ try:
             presence = presences.get_presence()
             priv_presence = presences.get_private_presence(presence)
             
+            if priv_presence is None:
+                log("Private presence is None, waiting for valid presence...")
+                lastGameState = "" # Reset so we try again next loop
+                time.sleep(1)
+                continue
+
             # Temp fix: Riot is swapping between nested and flat API structures.
             party_state = ""
             if "partyPresenceData" in priv_presence: # Check for nested structure

@@ -160,7 +160,7 @@ class Requests:
 
                         if response.status_code == 503 or response.status_code == 500 or \
                            (response.status_code == 200 and response.json().get("errorCode") == "RPC_ERROR"):
-                            return self._get_presence_via_glz()
+                            return None
 
                         if response.status_code == 200:
                             data = response.json()
@@ -171,7 +171,7 @@ class Requests:
                         pass
                     time.sleep(5)
 
-                return self._get_presence_via_glz()
+                return None
             elif url_type == "custom":
                 response = requests.request(method, f"{endpoint}", headers=self.get_headers(), verify=False)
                 self.log(

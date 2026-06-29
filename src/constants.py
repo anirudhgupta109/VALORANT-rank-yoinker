@@ -18,6 +18,7 @@ gamemodes = {
     "ggteam": "Escalation",
     "onefa": "Replication",
     "hurm": "Team Deathmatch",
+    "fortcollins": "Retake",
     "custom": "Custom",
     "snowball": "Snowball Fight",
     "valaram": "All Random One Site",

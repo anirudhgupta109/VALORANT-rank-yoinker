@@ -395,6 +395,7 @@ try:
                     time.sleep(2)
                 log(f"first game state: {game_state}")
             else:
+                previous_game_state = game_state
                 if Requests.is_deceive_running():
                     presence = presences.get_presence()
                     private_presence = presences.get_private_presence(presence)
@@ -404,7 +405,6 @@ try:
                         Wss.recconect_to_websocket(game_state)
                     )
 
-                previous_game_state = game_state
                 if previous_game_state == "INGAME" and game_state != "INGAME":
                     queue_match_result_update(
                         active_match_context.get("match_id"),

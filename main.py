@@ -560,6 +560,8 @@ try:
                     if coregame_match_id and allyTeam:
                         active_match_context["match_id"] = coregame_match_id
                         active_match_context["my_team"] = allyTeam
+
+                    heartbeat_data["myTeam"] = allyTeam
                     for player in Players:
                         status.update(
                             f"Loading players... [{playersLoaded}/{len(Players)}]"
@@ -745,7 +747,11 @@ try:
 
                         heartbeat_data["players"][player["Subject"]] = {
                             "puuid": player["Subject"],
-                            "name": names[player["Subject"]],
+                            "name": names.get(player["Subject"], ""),
+                            "RiotName": names.get(player["Subject"], ""),
+                            "GameName": names.get(player["Subject"], ""),
+                            "relation": "ally" if player["TeamID"] == allyTeam else "enemy",
+                            "myTeam": allyTeam,
                             "partyNumber": partyNum if party_icon != "" else 0,
                             "agent": agent_dict.get(player["CharacterID"].lower(), "Unknown"),
                             "rank": playerRank["rank"],
@@ -834,6 +840,22 @@ try:
                     )
                     partyCount = 0
                     partyIcons = {}
+
+                    allyTeam = None
+                    for team in pregame_stats.get("Teams", []):
+                        for team_player in team.get("Players", []):
+                            if team_player.get("Subject") == Requests.puuid:
+                                allyTeam = team.get("TeamID")
+                                break
+                        if allyTeam:
+                            break
+                    if allyTeam is None:
+                        for local_player in Players:
+                            if local_player.get("Subject") == Requests.puuid:
+                                allyTeam = local_player.get("TeamID")
+                                break
+                    heartbeat_data["myTeam"] = allyTeam
+
                     for player in Players:
                         status.update(
                             f"Loading players... [{playersLoaded}/{len(Players)}]"
@@ -1005,7 +1027,11 @@ try:
 
                         heartbeat_data["players"][player["Subject"]] = {
                             "puuid": player["Subject"],
-                            "name": names[player["Subject"]],
+                            "name": names.get(player["Subject"], ""),
+                            "RiotName": names.get(player["Subject"], ""),
+                            "GameName": names.get(player["Subject"], ""),
+                            "relation": "ally" if allyTeam is None or player.get("TeamID") == allyTeam else "enemy",
+                            "myTeam": allyTeam,
                             "partyNumber": partyNum if party_icon != "" else 0,
                             "agent": agent_dict.get(player["CharacterID"].lower(), "Unknown"),
                             "rank": playerRank["rank"],

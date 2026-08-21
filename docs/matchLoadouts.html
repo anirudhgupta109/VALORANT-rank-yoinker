@@ -12,7 +12,7 @@
     <div class="app-shell">
         <section class="players-column" aria-label="Players">
             <div class="roster-heading">
-                <h2>Players</h2>
+                <h2>Players</h2><button id="openSettingsButton" class="settings-button" type="button">Settings</button>
             </div>
             <div class="teams-layout">
                 <div class="team-section">
@@ -25,7 +25,8 @@
             </div>
         </section>
 
-        <main class="loadout-layout">
+        <section id="settingsPanel" class="settings-panel" hidden><div class="settings-window"><div class="settings-header"><h2>Display Settings</h2><button id="closeSettingsButton" class="close-fab" type="button">X</button></div><div class="settings-content"><section class="settings-section"><h3>Teams</h3><label class="setting-row">Show enemy loadouts <input id="showEnemiesSetting" type="checkbox"></label><label class="setting-row">Team layout <select id="teamLayoutSetting"><option value="separate">Separate</option><option value="unified">Unified</option></select></label></section><section class="settings-section"><h3>Player cards</h3><label class="setting-row">Show weapon previews <input id="showPreviewsSetting" type="checkbox"></label><label class="setting-row">Show team label <input id="showTeamSetting" type="checkbox"></label></section><section class="settings-section"><h3>Preview weapons</h3><div id="previewWeaponsSetting" class="weapon-settings-grid"></div></section><section class="settings-section"><h3>Loadout details</h3><label class="setting-row">Show expressions <input id="showExpressionsSetting" type="checkbox"></label><label class="setting-row">Show player card <input id="showPlayerCardSetting" type="checkbox"></label><label class="setting-row">Show weapon buddies <input id="showBuddiesSetting" type="checkbox"></label></section></div><div class="settings-footer"><button id="resetSettingsButton" class="secondary-button" type="button">Reset defaults</button><span>Changes save automatically.</span></div></div></section>
+<main class="loadout-layout">
             <section id="detailsPanel" class="details-column" aria-label="Selected player loadout" hidden>
                 <div class="details-window">
                     <div class="detail-controls">

@@ -914,11 +914,43 @@ try:
                                 break
                     heartbeat_data["myTeam"] = allyTeam
 
+                    if cfg.get_feature_flag("last_played"):
+                        stats_data = stats.read_data()
+                    else:
+                        stats_data = {}
+
                     for player in Players:
+                        already_seen = False
                         status.update(
                             f"Loading players... [{playersLoaded}/{len(Players)}]"
                         )
                         playersLoaded += 1
+                        
+                        if (
+                            player["Subject"] != Requests.puuid
+                            and player["Subject"] not in partyMembersList
+                        ):
+                            current_relation = "ally" if player["TeamID"] == allyTeam else "enemy"
+                            summary = stats.build_encounter_summary(
+                                stats_data,
+                                player["Subject"],
+                                pregame_match_id,
+                                fallback_name=names.get(player["Subject"], "#"),
+                                fallback_relation=current_relation,
+                            )
+                            if summary is not None:
+                                already_seen = True
+                                if player.get("PlayerIdentity", {}).get("Incognito") and hide_names:
+                                    team_string = "your" if player["TeamID"] == allyTeam else "enemy"
+                                    agent_str = agent_dict.get(player["CharacterID"].lower(), "Unknown") if player.get("CharacterID") else "Unknown"
+                                    summary["name"] = (
+                                        agent_str
+                                        + " on "
+                                        + team_string
+                                        + " team"
+                                    )
+                                already_played_with.append(summary)
+
                         party_icon = ""
 
                         # set party premade icon
@@ -972,6 +1004,7 @@ try:
                                 Requests.puuid,
                                 agent=player["CharacterID"],
                                 party_members=partyMembersList,
+                                played_before=already_seen,
                             )
                         else:
                             NameColor = colors.get_color_from_team(
@@ -980,6 +1013,7 @@ try:
                                 player["Subject"],
                                 Requests.puuid,
                                 party_members=partyMembersList,
+                                played_before=already_seen,
                             )
 
                         if lastTeam != player["TeamID"]:

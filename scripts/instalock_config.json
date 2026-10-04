@@ -1,0 +1,16 @@
+{
+    "default_agent": "clove",
+    "maps": {
+        "ascent": "clove",
+        "bind": "clove",
+        "breeze": "viper",
+        "fracture": "clove",
+        "haven": "clove",
+        "icebox": "killjoy",
+        "lotus": "clove",
+        "pearl": "clove",
+        "split": "clove",
+        "sunset": "clove",
+        "abyss": "astra"
+    }
+}

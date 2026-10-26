@@ -3,7 +3,7 @@ from src.colors import color
 
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
-version = "2.99"
+version = "3.0.1"
 enablePrivateLogging = True
 hide_names = False
 hide_levels = False
@@ -23,6 +23,8 @@ gamemodes = {
     "snowball": "Snowball Fight",
     "valaram": "All Random One Site",
     "dodgeball": "Knockout",
+    "abilitydraftarena": "Gauntlet: Glitched",
+    "skirmish2v2": "Skirmish: 2v2",
     "": "Custom",
 }
 
@@ -214,6 +216,7 @@ WEAPONS = [
     "Judge",
     "Bulldog",
     "Guardian",
+    "Warden",
     "Phantom",
     "Vandal",
     "Marshal",
@@ -255,5 +258,6 @@ DEFAULT_CONFIG = {
         "truncate_skins": True,
         "truncate_names": True,
         "starting_side": True
+        "auto_open_loadouts": True
     }
 }

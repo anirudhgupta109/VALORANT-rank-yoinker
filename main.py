@@ -4,12 +4,12 @@ import socket
 import sys
 import time
 import traceback
+import webbrowser
 
 import requests
 import urllib3
 from src.colors import color as colr
 from InquirerPy import inquirer
-from pathlib import Path
 from rich.console import Console as RichConsole
 
 from src.colors import Colors
@@ -151,6 +151,8 @@ try:
 
     Server = Server(log, ErrorSRC)
     Server.start_server()
+    if cfg.get_feature_flag("auto_open_loadouts"):
+        webbrowser.open(f"http://localhost:{Server.mobile_port}")
 
     agent_dict = content.get_all_agents()
 
@@ -350,18 +352,12 @@ try:
     def print_info():
         if cfg.get_feature_flag("pre_cls") or firstPrint:
             os.system("cls")
-            print("\nvRY Mobile", color(f"- {get_ip()}:{cfg.port}", fore=(255, 127, 80)))
-
-            inventories_url = (PROJECT_ROOT / Path("docs/matchLoadouts.html")).resolve().as_uri()
-            inventories_link = (
-                f"\033]8;;{inventories_url}\033\\"
-                "View in browser"
-                f"\033]8;;\033\\"
-            )
+            mobile_url = f"http://{get_ip()}:{Server.mobile_port}"
+            print("\nvRY Mobile", color(f"- {mobile_url}", fore=(255, 127, 80)))
 
             print(
                 "\nPlayer Inventories",
-                color(f"- {inventories_link}", fore=(255, 127, 80)),
+                color(f"- http://localhost:{Server.mobile_port}", fore=(255, 127, 80)),
             )
 
     richConsole = RichConsole()

@@ -87,6 +87,7 @@ class Requests:
                 "https://raw.githubusercontent.com/mdevio/VALORANT-rank-yoinker/main/status.json")
         except requests.exceptions.RequestException:
             print(color("[WARNING] Unable to check status - skipping...", fore=(255, 165, 0)))
+            print(color("[TIP] If vRY does not continue, make sure your VALORANT status is not set to Away.", fore=(255, 165, 0)))
             return
 
         try:

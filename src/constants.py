@@ -87,6 +87,7 @@ AGENTCOLORLIST = {
     "veto": (30, 60, 90),
     "waylay": (130, 195, 235),
     "miks": (250, 203, 115),
+    "hush": (235, 90, 180),
 }
 
 AGENTS = {

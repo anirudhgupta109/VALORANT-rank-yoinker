@@ -257,7 +257,7 @@ DEFAULT_CONFIG = {
         "short_ranks": False,
         "truncate_skins": True,
         "truncate_names": True,
-        "starting_side": True
+        "starting_side": True,
         "auto_open_loadouts": True
     }
 }
